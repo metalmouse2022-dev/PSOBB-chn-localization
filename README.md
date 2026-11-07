@@ -1,7 +1,6 @@
 # PSOBB《梦幻之星网络版：蓝色脉冲》汉化工具与技术资料
 
-![Uploading 86b02537-ff5b-41e0-9f2a-93e83effe802.png…]()
-
+<img width="931" height="692" alt="86b02537-ff5b-41e0-9f2a-93e83effe802" src="https://github.com/user-attachments/assets/bb53cd85-487b-48e8-9518-a026b01f25fa" />
 
 这里整理 PSOBB 单机汉化工程中的 **Python 工具、启动器源码、4:3 显示兼容补丁和中文排错经验**，供汉化作者与开发者参考、复现和继续维护。
 
