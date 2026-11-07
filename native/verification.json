@@ -1,0 +1,77 @@
+{
+  "upstream": "https://github.com/anzz1/psobb_patches",
+  "ref": "3d487ba5323b66d8795874f4edb0c82991cfbab6",
+  "base_directory": "psobb_widescreen",
+  "patch_sha256": "8906c2a76618f7dcb350c011238a7cefcb9a52613d24e0377b2aa9d41323348e",
+  "changed_files": [
+    {
+      "path": "d3d8to9.vcxproj",
+      "change": "modified",
+      "upstream_blob_sha1": "4a234aec47dd9c38e5771f27eb109325c8192a5a",
+      "target_sha256": "f574b300f9554cda5ca0a1f4af0fb4c558a37d0482e1a4cb3f40be47f424d28c"
+    },
+    {
+      "path": "source/WideScreen.c",
+      "change": "modified",
+      "upstream_blob_sha1": "14df0519f6b512620ff7d2c057f01bcdafa5be6c",
+      "target_sha256": "7d17cfc19ff2a3e19b6675a1400d0bef2580662e80541b453aa77f090b1f91c0"
+    },
+    {
+      "path": "source/d3d8to9.hpp",
+      "change": "modified",
+      "upstream_blob_sha1": "0c0f8a9ba433d70487f7644d794b1f68b2c55c99",
+      "target_sha256": "af36f38e7984613731d0760dd41ab190c677f4fd574c7d99c9e4d4ebfece9dde"
+    },
+    {
+      "path": "source/d3d8to9_base.cpp",
+      "change": "modified",
+      "upstream_blob_sha1": "290523519a46af59cd56bea3319d3d375ca47945",
+      "target_sha256": "df3a921188f51c921cc05fbd2a8b2cf4fae17876896cf2713b10982596bf5546"
+    },
+    {
+      "path": "source/d3d8to9_device.cpp",
+      "change": "modified",
+      "upstream_blob_sha1": "a19f80cdfa441988907f41512f122050fc6ce1e7",
+      "target_sha256": "7b94cc6528a40ab8522a1d7d0650a3c44538ec9c24864c4fe11cca1912f19b74"
+    },
+    {
+      "path": "source/d3d8to9_swap_chain.cpp",
+      "change": "modified",
+      "upstream_blob_sha1": "07cf718f4069ce26354a0e781613fd900ace3d92",
+      "target_sha256": "b8613576ad38c135b430b50f4fb10474e5927d30a29a36fa2d1d8b72d7bd33cb"
+    },
+    {
+      "path": "source/display_modes.hpp",
+      "change": "added",
+      "upstream_blob_sha1": null,
+      "target_sha256": "bbe45f1b36fe39a6abb86729c85a176846f81ccb4b87281e8b73cc9aa964477a"
+    },
+    {
+      "path": "source/presentation.hpp",
+      "change": "added",
+      "upstream_blob_sha1": null,
+      "target_sha256": "811ac2e990902ba61f9d03cd8ff066af5e614e690591232ab462df24a17bc551"
+    },
+    {
+      "path": "source/presentation_window.h",
+      "change": "added",
+      "upstream_blob_sha1": null,
+      "target_sha256": "2445c0ccb33441455ab6ad6d3597f245fde0843d3eabb480861a7ea633b5910a"
+    }
+  ],
+  "verification": {
+    "upstream_git_blob_sha1": "passed",
+    "git_apply_check": "passed",
+    "git_apply": "passed",
+    "applied_files_exact_target_sha256": "passed",
+    "compilation_this_publication": "not_run",
+    "game_runtime_this_publication": "not_run"
+  },
+  "excluded": [
+    "DDS textures",
+    "DirectX SDK and NVAPI copies",
+    "embedded asset headers",
+    "compiled objects and DLLs",
+    "game files"
+  ]
+}

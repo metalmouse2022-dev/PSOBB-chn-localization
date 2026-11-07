@@ -1,0 +1,2 @@
+# Only needed by the optional external translation scripts.
+requests>=2.31,<3

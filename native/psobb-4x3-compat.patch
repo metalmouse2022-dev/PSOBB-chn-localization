@@ -1,0 +1,404 @@
+diff --git a/d3d8to9.vcxproj b/d3d8to9.vcxproj
+--- a/d3d8to9.vcxproj
++++ b/d3d8to9.vcxproj
+@@ -59,10 +59,6 @@
+     <ResourceCompile>
+       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+     </ResourceCompile>
+-    <CustomBuildStep>
+-      <Command>cmd.exe /c copy /y /b "$(TargetPath)" "C:\Games\PSO BB\client"</Command>
+-      <Outputs>always.xyz</Outputs>
+-    </CustomBuildStep>
+   </ItemDefinitionGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+     <ClCompile>
+diff --git a/source/WideScreen.c b/source/WideScreen.c
+--- a/source/WideScreen.c
++++ b/source/WideScreen.c
+@@ -7,8 +7,13 @@
+ #define WIN32_LEAN_AND_MEAN
+ #include <windows.h>
+ #include <stdlib.h>
++#include <wchar.h>
++#include "presentation_window.h"
+ 
+ extern float g_fHUDScale;
++DWORD g_displayWidth = 1280;
++DWORD g_displayHeight = 960;
++BOOL g_displayBorderless = FALSE;
+ 
+ ULONG listHUDWidth[] = {
+   0x004011D2,
+@@ -508,13 +513,14 @@
+ 
+ HWND __stdcall myCreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y,
+                                  int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam) {
+-  X = rectMon.left;
+-  Y = rectMon.top;
+-  nWidth = rectMon.right - rectMon.left;
+-  nHeight = rectMon.bottom - rectMon.top;
+-
+-  dwStyle = WS_POPUP;
+-  dwExStyle = WS_EX_APPWINDOW;
++  if (g_displayBorderless) {
++    X = rectMon.left;
++    Y = rectMon.top;
++    nWidth = rectMon.right - rectMon.left;
++    nHeight = rectMon.bottom - rectMon.top;
++    dwStyle = BorderlessStyle(dwStyle);
++    dwExStyle = BorderlessExStyle(dwExStyle);
++  }
+   HWND hWnd = CreateWindowExA(dwExStyle, lpClassName, lpWindowName, dwStyle, X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+   //SetWindowPos(hWnd, HWND_NOTOPMOST, X, Y, nWidth, nHeight, SWP_SHOWWINDOW);
+   return hWnd;
+@@ -556,11 +562,27 @@
+   GetMonitorInfoA(monitor, &info);
+   memcpy(&rectMon, &info.rcMonitor, sizeof(RECT));
+ 
+-  memset((void*)0x00482E20, 0x90, 52); // WINDOW_MODE = 1
++  // Preserve the client's WINDOW_MODE registry read. Only borderless changes
++  // native window creation; presentation explicitly preserves the 4:3 picture.
++  // Use a real 4:3 backbuffer rather than the monitor's widescreen aspect ratio.
++  WCHAR config[MAX_PATH];
++  DWORD length = GetModuleFileNameW(NULL, config, MAX_PATH);
++  if (!length || length >= MAX_PATH) return;
++  WCHAR* slash = wcsrchr(config, L'\\');
++  if (!slash || (slash - config) + _countof(L"\\launcher_display.ini") > MAX_PATH) return;
++  wcscpy(slash, L"\\launcher_display.ini");
++  DWORD width = GetPrivateProfileIntW(L"Display", L"Width", 1280, config);
++  DWORD height = GetPrivateProfileIntW(L"Display", L"Height", 960, config);
++  if (width < 640 || width > 7680 || height < 480 || height > 5760 || width * 3 != height * 4) {
++    width = 1280;
++    height = 960;
++  }
++  g_displayWidth = width;
++  g_displayHeight = height;
++  WCHAR mode[32];
++  GetPrivateProfileStringW(L"Display", L"Mode", L"window", mode, _countof(mode), config);
++  g_displayBorderless = (_wcsicmp(mode, L"borderless") == 0 || _wcsicmp(mode, L"fullscreen") == 0);
+   *(ULONG_PTR*)0x0082D1D8 = (ULONG_PTR)&pmyCreateWindowExA;
+-
+-  DWORD width = rectMon.right - rectMon.left;
+-  DWORD height = rectMon.bottom - rectMon.top;
+   float AR = (float)width / (float)height;
+   float A = (AR / (4.0f / 3.0f)) * 640.0f;
+   float B = (AR / (4.0f / 3.0f)) * 128.0f;
+diff --git a/source/d3d8to9.hpp b/source/d3d8to9.hpp
+--- a/source/d3d8to9.hpp
++++ b/source/d3d8to9.hpp
+@@ -34,6 +34,7 @@
+ extern "C" BOOL g_bCelShader;
+ extern "C" BOOL g_bDOF;
+ extern "C" BOOL g_bHDR;
++extern "C" BOOL g_displayBorderless;
+ 
+ class Direct3D8 : public IDirect3D8
+ {
+diff --git a/source/d3d8to9_base.cpp b/source/d3d8to9_base.cpp
+--- a/source/d3d8to9_base.cpp
++++ b/source/d3d8to9_base.cpp
+@@ -4,6 +4,11 @@
+  */
+ 
+ #include "d3d8to9.hpp"
++#include "display_modes.hpp"
++#include "presentation.hpp"
++
++extern "C" DWORD g_displayWidth;
++extern "C" DWORD g_displayHeight;
+ 
+ static const D3DFORMAT AdapterFormats[] = {
+ 	D3DFMT_A8R8G8B8,
+@@ -35,6 +40,13 @@
+ 				CurrentAdapterModeCount[Adapter]++;
+ 			}
+ 		}
++
++		// PSOBB searches EnumAdapterModes before creating its windowed device.
++		// A 4:3 backbuffer such as 2880x2160 may be absent from the physical
++		// monitor's modes even though windowed rendering supports it.
++		AppendWindowedDisplayModes(CurrentAdapterModes[Adapter], ProxyInterface,
++			Adapter, g_displayWidth, g_displayHeight);
++		CurrentAdapterModeCount[Adapter] = static_cast<UINT>(CurrentAdapterModes[Adapter].size());
+ 	}
+ }
+ Direct3D8::~Direct3D8()
+@@ -185,7 +197,7 @@
+ 	ConvertPresentParameters(*pPresentationParameters, PresentParams);
+ 
+ 	DWORD MSQuality = 0;
+-	if (g_bMSAA) {
++	if (g_bMSAA && !g_displayBorderless) {
+ 		//if (SUCCEEDED(ProxyInterface->CheckDeviceMultiSampleType(Adapter, DeviceType, PresentParams.BackBufferFormat, PresentParams.Windowed, D3DMULTISAMPLE_8_SAMPLES, &MSQuality)))
+ 			//PresentParams.MultiSampleType = D3DMULTISAMPLE_8_SAMPLES;
+ 		if (SUCCEEDED(ProxyInterface->CheckDeviceMultiSampleType(Adapter, DeviceType, PresentParams.BackBufferFormat, PresentParams.Windowed, D3DMULTISAMPLE_4_SAMPLES, &MSQuality)))
+@@ -194,6 +206,7 @@
+ 			PresentParams.MultiSampleType = D3DMULTISAMPLE_2_SAMPLES;
+ 	}
+ 	PresentParams.MultiSampleQuality = (MSQuality != 0 && PresentParams.MultiSampleType != D3DMULTISAMPLE_NONE) ? MSQuality - 1 : 0;
++	if (g_displayBorderless) ConfigureBorderlessCopy(PresentParams);
+ 
+ 	IDirect3DDevice9 *DeviceInterface = nullptr;
+ 
+@@ -201,6 +214,7 @@
+ 	if (FAILED(hr))
+ 		return hr;
+ 
++	if (g_displayBorderless) EnforceBorderlessWindow(PresentParams.hDeviceWindow ? PresentParams.hDeviceWindow : hFocusWindow);
+ 	*ppReturnedDeviceInterface = new Direct3DDevice8(this, DeviceInterface, BehaviorFlags, &PresentParams);
+ 
+ 	// Set default vertex declaration
+diff --git a/source/d3d8to9_device.cpp b/source/d3d8to9_device.cpp
+--- a/source/d3d8to9_device.cpp
++++ b/source/d3d8to9_device.cpp
+@@ -6,6 +6,7 @@
+ #include <d3dx9.h>
+ //#include "d3dx9.hpp"
+ #include "d3d8to9.hpp"
++#include "presentation.hpp"
+ #include <regex>
+ #include <assert.h>
+ 
+@@ -215,7 +216,7 @@
+ 	ProxyInterface->GetCreationParameters(&CreationParams);
+ 
+ 	DWORD MSQuality = 0;
+-	if (g_bMSAA) {
++	if (g_bMSAA && !g_displayBorderless) {
+ 		//if (SUCCEEDED(D3D->GetProxyInterface()->CheckDeviceMultiSampleType(CreationParams.AdapterOrdinal, CreationParams.DeviceType, PresentParams.BackBufferFormat, PresentParams.Windowed, D3DMULTISAMPLE_8_SAMPLES, &MSQuality)))
+ 			//PresentParams.MultiSampleType = D3DMULTISAMPLE_8_SAMPLES;
+ 		if (SUCCEEDED(D3D->GetProxyInterface()->CheckDeviceMultiSampleType(CreationParams.AdapterOrdinal, CreationParams.DeviceType, PresentParams.BackBufferFormat, PresentParams.Windowed, D3DMULTISAMPLE_4_SAMPLES, &MSQuality)))
+@@ -225,6 +226,7 @@
+ 	}
+ 	PresentParams.MultiSampleQuality = (MSQuality != 0 && PresentParams.MultiSampleType != D3DMULTISAMPLE_NONE) ? MSQuality - 1 : 0;
+ 
++	if (g_displayBorderless) ConfigureBorderlessCopy(PresentParams);
+ 	IDirect3DSwapChain9 *SwapChainInterface = nullptr;
+ 
+ 	const HRESULT hr = ProxyInterface->CreateAdditionalSwapChain(&PresentParams, &SwapChainInterface);
+@@ -259,7 +261,7 @@
+ 	ProxyInterface->GetCreationParameters(&CreationParams);
+ 
+ 	DWORD MSQuality = 0;
+-	if (g_bMSAA) {
++	if (g_bMSAA && !g_displayBorderless) {
+ 		//if (SUCCEEDED(D3D->GetProxyInterface()->CheckDeviceMultiSampleType(CreationParams.AdapterOrdinal, CreationParams.DeviceType, PresentParams.BackBufferFormat, PresentParams.Windowed, D3DMULTISAMPLE_8_SAMPLES, &MSQuality)))
+ 			//PresentParams.MultiSampleType = D3DMULTISAMPLE_8_SAMPLES;
+ 		if (SUCCEEDED(D3D->GetProxyInterface()->CheckDeviceMultiSampleType(CreationParams.AdapterOrdinal, CreationParams.DeviceType, PresentParams.BackBufferFormat, PresentParams.Windowed, D3DMULTISAMPLE_4_SAMPLES, &MSQuality)))
+@@ -270,8 +272,8 @@
+ 	PresentParams.MultiSampleQuality = (MSQuality != 0 && PresentParams.MultiSampleType != D3DMULTISAMPLE_NONE) ? MSQuality - 1 : 0;
+ 	MSAA = PresentParams.MultiSampleType;
+ 
+-	HRESULT hr = ProxyInterface->Reset(&PresentParams);
+-
++	if (g_displayBorderless) ConfigureBorderlessCopy(PresentParams);
++	MSAA = PresentParams.MultiSampleType;
+ 	SAFE_RELEASE(rgbaBuffer1Surf);
+ 	SAFE_RELEASE(rgbaBuffer1Tex);
+ 	SAFE_RELEASE(depthStencilSurf);
+@@ -283,8 +285,13 @@
+ 	SAFE_DELETE(dof);
+ 	SAFE_DELETE(depthTexture);
+ 
++	// Default-pool render targets, effects and state blocks must be released
++	// before Reset, otherwise D3D9 rejects recovery with INVALIDCALL.
++	HRESULT hr = ProxyInterface->Reset(&PresentParams);
++
+ 	if (SUCCEEDED(hr))
+ 	{
++		if (g_displayBorderless) EnforceBorderlessWindow(PresentParams.hDeviceWindow ? PresentParams.hDeviceWindow : CreationParams.hFocusWindow);
+ 		ProxyInterface->GetDeviceCaps(&devCaps);
+ 
+ 		ProxyInterface->CreateTexture(PresentParams.BackBufferWidth, PresentParams.BackBufferHeight, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &rgbaBuffer1Tex, NULL);
+@@ -321,6 +328,17 @@
+ 	mrts = nrts;
+ 	nrts = 0;
+ 
++	if (g_displayBorderless) {
++		D3DDEVICE_CREATION_PARAMETERS creation = {};
++		if (SUCCEEDED(ProxyInterface->GetCreationParameters(&creation))) {
++			HWND window = hDestWindowOverride ? hDestWindowOverride : creation.hFocusWindow;
++			RECT client;
++			if (GetClientRect(window, &client) && client.right > 0 && client.bottom > 0) {
++				RECT destination = FitFourByThree(client.right, client.bottom);
++				return ProxyInterface->Present(pSourceRect, &destination, hDestWindowOverride, nullptr);
++			}
++		}
++	}
+ 	return ProxyInterface->Present(pSourceRect, pDestRect, hDestWindowOverride, nullptr);
+ }
+ HRESULT STDMETHODCALLTYPE Direct3DDevice8::GetBackBuffer(UINT iBackBuffer, D3DBACKBUFFER_TYPE Type, IDirect3DSurface8 **ppBackBuffer)
+@@ -689,6 +707,10 @@
+ 
+ HRESULT STDMETHODCALLTYPE Direct3DDevice8::SetRenderTarget(IDirect3DSurface8 *pRenderTarget, IDirect3DSurface8 *pNewZStencil)
+ {
++	// A failed Reset leaves the default-pool effects released until a later
++	// successful Reset. Do not dereference them while the device is lost.
++	if (depthTexture == nullptr)
++		return D3DERR_DEVICELOST;
+ 	HRESULT hr;
+ 
+ 	if (pRenderTarget != nullptr)
+@@ -2523,4 +2545,4 @@
+ 	if(hr == D3D_OK) return (IDirect3DTexture9*)pContainer;
+ 	SAFE_RELEASE(pContainer);
+ 	return NULL;
+-}
+\ No newline at end of file
++}
+diff --git a/source/d3d8to9_swap_chain.cpp b/source/d3d8to9_swap_chain.cpp
+--- a/source/d3d8to9_swap_chain.cpp
++++ b/source/d3d8to9_swap_chain.cpp
+@@ -4,6 +4,7 @@
+  */
+ 
+ #include "d3d8to9.hpp"
++#include "presentation.hpp"
+ 
+ Direct3DSwapChain8::Direct3DSwapChain8(Direct3DDevice8 *Device, IDirect3DSwapChain9 *ProxyInterface) :
+ 	Device(Device), ProxyInterface(ProxyInterface)
+@@ -47,6 +48,17 @@
+ {
+ 	UNREFERENCED_PARAMETER(pDirtyRegion);
+ 
++	if (g_displayBorderless) {
++		D3DPRESENT_PARAMETERS parameters = {};
++		if (SUCCEEDED(ProxyInterface->GetPresentParameters(&parameters))) {
++			HWND window = hDestWindowOverride ? hDestWindowOverride : parameters.hDeviceWindow;
++			RECT client;
++			if (GetClientRect(window, &client) && client.right > 0 && client.bottom > 0) {
++				RECT destination = FitFourByThree(client.right, client.bottom);
++				return ProxyInterface->Present(pSourceRect, &destination, hDestWindowOverride, nullptr, 0);
++			}
++		}
++	}
+ 	return ProxyInterface->Present(pSourceRect, pDestRect, hDestWindowOverride, nullptr, 0);
+ }
+ HRESULT STDMETHODCALLTYPE Direct3DSwapChain8::GetBackBuffer(UINT iBackBuffer, D3DBACKBUFFER_TYPE Type, IDirect3DSurface8 **ppBackBuffer)
+diff --git a/source/display_modes.hpp b/source/display_modes.hpp
+new file mode 100644
+--- /dev/null
++++ b/source/display_modes.hpp
+@@ -0,0 +1,26 @@
++/** Windowed backbuffers need not be physical monitor modes. */
++#pragma once
++#include <d3d9.h>
++#include <vector>
++
++inline void AppendWindowedDisplayModes(std::vector<D3DDISPLAYMODE>& modes,
++    IDirect3D9* proxy, UINT adapter, UINT width, UINT height) {
++    D3DDISPLAYMODE desktop = {};
++    if (width < 640 || width > 7680 || height < 480 || height > 5760 ||
++        width * 3 != height * 4 || FAILED(proxy->GetAdapterDisplayMode(adapter, &desktop))) return;
++    const D3DFORMAT formats[] = {D3DFMT_X8R8G8B8, D3DFMT_A8R8G8B8};
++    for (D3DFORMAT format : formats) {
++        if (FAILED(proxy->CheckDeviceType(adapter, D3DDEVTYPE_HAL, desktop.Format, format, TRUE))) continue;
++        bool exists = false;
++        for (const D3DDISPLAYMODE& mode : modes) {
++            if (mode.Width == width && mode.Height == height && mode.Format == format) {
++                exists = true;
++                break;
++            }
++        }
++        if (!exists) {
++            D3DDISPLAYMODE mode = {width, height, desktop.RefreshRate, format};
++            modes.push_back(mode);
++        }
++    }
++}
+diff --git a/source/presentation.hpp b/source/presentation.hpp
+new file mode 100644
+--- /dev/null
++++ b/source/presentation.hpp
+@@ -0,0 +1,13 @@
++#pragma once
++#include "presentation_window.h"
++#include <d3d9.h>
++
++inline void ConfigureBorderlessCopy(D3DPRESENT_PARAMETERS& parameters) {
++    // Present(destination rectangle) requires COPY, one buffer and no MSAA.
++    parameters.Windowed = TRUE;
++    parameters.SwapEffect = D3DSWAPEFFECT_COPY;
++    parameters.BackBufferCount = 1;
++    parameters.MultiSampleType = D3DMULTISAMPLE_NONE;
++    parameters.MultiSampleQuality = 0;
++    parameters.FullScreen_RefreshRateInHz = 0;
++}
+diff --git a/source/presentation_window.h b/source/presentation_window.h
+new file mode 100644
+--- /dev/null
++++ b/source/presentation_window.h
+@@ -0,0 +1,73 @@
++#pragma once
++#include <windows.h>
++
++static __inline DWORD BorderlessStyle(DWORD style) {
++    return (style & ~(WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX)) | WS_POPUP | WS_CLIPCHILDREN;
++}
++
++static __inline DWORD BorderlessExStyle(DWORD style) {
++    return (style & ~(WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE | WS_EX_DLGMODALFRAME)) | WS_EX_APPWINDOW;
++}
++
++static __inline RECT FitFourByThree(LONG width, LONG height) {
++    RECT result = {0, 0, 0, 0};
++    LONG pictureWidth, pictureHeight;
++    if (width <= 0 || height <= 0) return result;
++    pictureWidth = width;
++    pictureHeight = (LONG)((long long)width * 3 / 4);
++    if (pictureHeight > height) {
++        pictureHeight = height;
++        pictureWidth = (LONG)((long long)height * 4 / 3);
++    }
++    result.left = (width - pictureWidth) / 2;
++    result.top = (height - pictureHeight) / 2;
++    result.right = result.left + pictureWidth;
++    result.bottom = result.top + pictureHeight;
++    return result;
++}
++
++static __inline BOOL EnforceBorderlessWindow(HWND window) {
++    MONITORINFO monitor;
++    RECT client, picture, bars[4];
++    BOOL resized;
++    int index;
++    WNDCLASSW blackClass;
++    HINSTANCE instance = GetModuleHandleW(NULL);
++    const WCHAR* blackClassName = L"PSOBB_Letterbox_v3";
++    monitor.cbSize = sizeof(monitor);
++    if (!IsWindow(window) || !GetMonitorInfoW(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor)) return FALSE;
++    SetWindowLongPtrW(window, GWL_STYLE, (LONG_PTR)BorderlessStyle((DWORD)GetWindowLongPtrW(window, GWL_STYLE)));
++    SetWindowLongPtrW(window, GWL_EXSTYLE, (LONG_PTR)BorderlessExStyle((DWORD)GetWindowLongPtrW(window, GWL_EXSTYLE)));
++    resized = SetWindowPos(window, NULL, monitor.rcMonitor.left, monitor.rcMonitor.top,
++        monitor.rcMonitor.right - monitor.rcMonitor.left, monitor.rcMonitor.bottom - monitor.rcMonitor.top,
++        SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
++    if (!resized || !GetClientRect(window, &client)) return FALSE;
++    picture = FitFourByThree(client.right, client.bottom);
++    SetRect(&bars[0], 0, 0, picture.left, client.bottom);
++    SetRect(&bars[1], picture.right, 0, client.right, client.bottom);
++    SetRect(&bars[2], picture.left, 0, picture.right, picture.top);
++    SetRect(&bars[3], picture.left, picture.bottom, picture.right, client.bottom);
++    ZeroMemory(&blackClass, sizeof(blackClass));
++    if (!GetClassInfoW(instance, blackClassName, &blackClass)) {
++        blackClass.lpfnWndProc = DefWindowProcW;
++        blackClass.hInstance = instance;
++        blackClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
++        blackClass.lpszClassName = blackClassName;
++        if (!RegisterClassW(&blackClass)) return FALSE;
++    }
++    // Opaque non-interactive child bars repaint after occlusion; do not rely on
++    // undefined pixels outside a partial Direct3D Present destination.
++    for (index = 0; index < 4; ++index) {
++        HWND bar = GetDlgItem(window, 0x7f01 + index);
++        LONG width = bars[index].right - bars[index].left;
++        LONG height = bars[index].bottom - bars[index].top;
++        if (!bar) bar = CreateWindowExW(WS_EX_NOACTIVATE, blackClassName, L"", WS_CHILD | WS_DISABLED,
++            0, 0, 0, 0, window, (HMENU)(INT_PTR)(0x7f01 + index), instance, NULL);
++        if (!bar) return FALSE;
++        if (width > 0 && height > 0) {
++            SetWindowPos(bar, HWND_TOP, bars[index].left, bars[index].top, width, height,
++                SWP_NOACTIVATE | SWP_SHOWWINDOW);
++        } else ShowWindow(bar, SW_HIDE);
++    }
++    return TRUE;
++}

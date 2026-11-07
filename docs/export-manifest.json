@@ -1,0 +1,137 @@
+{
+  "date": "2026-11-07",
+  "records": [
+    {
+      "source": "backup files/开发源码与翻译工具/launcher.py",
+      "destination": "tools/launcher.py",
+      "source_sha256": "9700b06c95138471b5621cc29837c9043c141fc9c002ddbaaff7303f3a3e6c1b",
+      "export_rules": 1
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/launcher_art.py",
+      "destination": "tools/launcher_art.py",
+      "source_sha256": "d01f8ef5a5f4d685299d26b9da63856af11b2b574fbce6197eed161ff8a411af",
+      "export_rules": 0
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/launcher_data.py",
+      "destination": "tools/launcher_data.py",
+      "source_sha256": "208b9c234339e1b8f11b9178c0bb086b3e4a0c2a66628f8902c5847929bc6a2c",
+      "export_rules": 0
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/launcher_display.py",
+      "destination": "tools/launcher_display.py",
+      "source_sha256": "18806fcca116fc145a07ed3c58841b8420c0ea1a6a7ec24d506363d96cfd5a78",
+      "export_rules": 0
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/launcher_input.py",
+      "destination": "tools/launcher_input.py",
+      "source_sha256": "49cf066f7ef4bf6f9386b31007c2231ca0656e12a0a04652afc74dee1e8f09bb",
+      "export_rules": 0
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/launcher_monitor.py",
+      "destination": "tools/launcher_monitor.py",
+      "source_sha256": "6ef0983ec7358acbb70ea1b3146d9e3a9cc07af8e2afc7aa704344faee25bee0",
+      "export_rules": 0
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/launcher_theme.py",
+      "destination": "tools/launcher_theme.py",
+      "source_sha256": "0a07c0a7730ed72b3eb361295b78a9698125bef04b7aa540e2ac96848bfc9625",
+      "export_rules": 0
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/psobb_quest_tool.py",
+      "destination": "tools/psobb_quest_tool.py",
+      "source_sha256": "86b33640edef4c4add06832655931c0daa7b49208404332ee81a5210bb154d27",
+      "export_rules": 3
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/psobb_batch_tool.py",
+      "destination": "tools/psobb_batch_tool.py",
+      "source_sha256": "5976bab16d80bbbf0410ad3b673c30ff5230abe0a24e84aa9300bb7c4484f817",
+      "export_rules": 1
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/psobb_api_translator.py",
+      "destination": "tools/psobb_api_translator.py",
+      "source_sha256": "d58488a974f71d4daf3a4bc60c6418c44a63b29ea7f1448a47e31aa5cab058eb",
+      "export_rules": 4
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/psobb_ep2_raw_translator.py",
+      "destination": "tools/psobb_ep2_raw_translator.py",
+      "source_sha256": "a34c20f6665bc25dea9b2f51f10b1acfdee4c3e2e3a42bdce7816ed36a0563db",
+      "export_rules": 1
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/psobb_map_batch_translator.py",
+      "destination": "tools/psobb_map_batch_translator.py",
+      "source_sha256": "e084600f57909f596a34df6990116a65aa353ffe4a21160c4538dfd12873ebf2",
+      "export_rules": 1
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/test_launcher_fixes.py",
+      "destination": "tools/test_launcher_fixes.py",
+      "source_sha256": "596b37fffa428a713ebaa736189a689c524b23f12515c78b707ff553c9f38840",
+      "export_rules": 1
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/test_display_input.py",
+      "destination": "tools/test_display_input.py",
+      "source_sha256": "80bdfb5710408b2a97048c92dd79d4e85f8328d5475b628722dc371e78a244cc",
+      "export_rules": 1
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/test_redbox.py",
+      "destination": "tools/test_redbox.py",
+      "source_sha256": "ea5b3e493de259b884f53664a521b6832707d94d573f83f0bfae6dc05c268bef",
+      "export_rules": 2
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/test_level_table_scaling.py",
+      "destination": "tools/test_level_table_scaling.py",
+      "source_sha256": "11318f2a1c399e9ef3a5bd1a70937c1cae9872731e86d078be2dce3970e0bde0",
+      "export_rules": 0
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/audio_compat_toggle.ps1",
+      "destination": "tools/audio_compat_toggle.ps1",
+      "source_sha256": "da32a1da8841a06af5447466e7f7387b4cceab7095248cebf66ddf9142fa3c1f",
+      "export_rules": 0
+    },
+    {
+      "source": "backup files/开发源码与翻译工具/PSOBB一键单机启动器.spec",
+      "destination": "tools/PSOBB一键单机启动器.spec",
+      "source_sha256": "e8dfabcc5992ff7c35ef9850287b3150f87b600a15d62813a2e83581703603d3",
+      "export_rules": 1
+    },
+    {
+      "source": "backup files/道具说明汉化文件/psobb_unitxt_tool.py",
+      "destination": "tools/psobb_unitxt_tool.py",
+      "source_sha256": "f30ee598a46c688f4cc5ca900a251d60e954687c13643da434f0b05068aca445",
+      "export_rules": 0
+    },
+    {
+      "source": "docs/2026-10-29-levelup-growth-table-fix.md",
+      "destination": "docs/history/2026-10-29-levelup-growth-table-fix.md",
+      "source_sha256": "10c859e372fb8da2ade097d41247a8b21e03678b30678a800fcec1564652fcf7",
+      "export_rules": 1
+    },
+    {
+      "source": "docs/2026-10-29-startup-0142-audio-isolation.md",
+      "destination": "docs/history/2026-10-29-startup-0142-audio-isolation.md",
+      "source_sha256": "e3adcb5e2281a0dbcb22b3f5d98554663615ae8c69fc942f275087367249cb13",
+      "export_rules": 1
+    },
+    {
+      "source": "docs/display-input-update.md",
+      "destination": "docs/history/display-input-update.md",
+      "source_sha256": "f1d07cc0e9b990ade1fb6f00980441ee8091f262c3af9901ec44258e5ccaf2a1",
+      "export_rules": 0
+    }
+  ]
+}
